@@ -13,6 +13,8 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE int rm_init(const char* data, const char* basemap, const unsigned char* font, int fn) {
     return g.load(data, basemap, font, (size_t)fn) ? (int)g.data.stops.size() : 0;
 }
+// 地域を切り替える（GTFS データだけ入れ替え）。戻り値は停留所数
+EMSCRIPTEN_KEEPALIVE int rm_load(const char* data) { return g.load_data(data); }
 EMSCRIPTEN_KEEPALIVE void rm_resize(int w, int h, double ui) { g.ui = ui; g.resize(w, h); }
 EMSCRIPTEN_KEEPALIVE void rm_fit() { g.fit(); }
 EMSCRIPTEN_KEEPALIVE void rm_pan(double dx, double dy) { g.pan(dx, dy); }

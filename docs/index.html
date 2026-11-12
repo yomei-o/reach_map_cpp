@@ -30,7 +30,11 @@
 <body>
 <div id="wrap"><canvas id="cv"></canvas></div>
 <div id="bar">
-  <div class="grp"><b id="region">交通空白マップ</b></div>
+  <div class="grp"><b>交通空白マップ</b>
+    <select id="region" style="background:#0d1420;color:#e8eef6;border:1px solid var(--line);border-radius:7px;padding:3px 6px;font-size:.85rem">
+      <option value="reach_toyama.txt">富山（富山地鉄バス）</option>
+      <option value="reach_toei.txt">東京・都営バス（23区）</option>
+    </select></div>
   <div class="grp"><label>出発時刻</label><input id="time" type="range" min="300" max="1439" step="5" value="480"><span id="val">08:00</span></div>
   <div class="grp"><label>曜日</label><span class="seg"><button id="wd" class="on">平日</button><button id="hd">土休</button></span></div>
   <div class="grp"><label>到達<span id="hzv">90</span>分</label><input id="hz" type="range" min="15" max="120" step="5" value="90"></div>
@@ -76,11 +80,20 @@ function draw(){
   const nstops = M._rm_init(dp, bp, fp, fb.length);
   M._free(dp); M._free(bp); M._free(fp);
   if (!nstops){ $('msg').textContent='データの読み込みに失敗しました'; return; }
-  const j = JSON.parse(M.UTF8ToString(M._rm_info()));
-  $('region').textContent = `交通空白マップ — ${j.region}`;
   $('msg').remove();
   size(); M._rm_fit(); draw();
   window.addEventListener('resize', ()=>{ size(); draw(); });
+
+  // 地域切り替え（GTFS データだけ入れ替え。東京は大きいので少し待つ）
+  $('region').addEventListener('change', async e => {
+    const prev = $('reached').textContent; $('reached').textContent = '読み込み中…';
+    try {
+      const t = await fetch(e.target.value).then(r=>r.text());
+      const p = pass(t); const ns = M._rm_load(p); M._free(p);
+      if (!ns){ $('reached').textContent = '読み込み失敗'; return; }
+      M._rm_fit(); draw();
+    } catch(err){ $('reached').textContent = '読み込み失敗: '+err; }
+  });
 
   // 時刻・曜日・到達・乗換
   $('time').addEventListener('input', e=>{ const m=+e.target.value; $('val').textContent=hhmm(m); M._rm_time(m*60); draw(); });

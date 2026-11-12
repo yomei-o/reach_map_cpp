@@ -10,6 +10,7 @@ EMCC="$EMSDK/upstream/emscripten/emcc.exe"
   -s EXPORTED_RUNTIME_METHODS='["HEAPU8","UTF8ToString","stringToUTF8","lengthBytesUTF8"]' -s EXPORTED_FUNCTIONS='["_malloc","_free"]' \
   wasm/rm_wasm.cpp -o docs/rm.js
 cp data/reach_toyama.txt docs/reach_toyama.txt
+cp data/reach_toei.txt docs/reach_toei.txt
 cp data/basemap.txt docs/basemap.txt
 cp fonts/NotoSansJP-Bold-subset.ttf docs/font.ttf
 echo "built docs/rm.js"

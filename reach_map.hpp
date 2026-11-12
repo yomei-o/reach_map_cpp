@@ -50,6 +50,14 @@ struct Map {
         return true;
     }
 
+    // 地域を切り替える（下地・フォントはそのまま、GTFS データだけ入れ替え）
+    int load_data(const std::string& data_text) {
+        if (!data.load(data_text)) return 0;
+        origin = pick_busiest();
+        dirty = true;
+        return (int)data.stops.size();
+    }
+
     // 下地（Natural Earth の県境・陸地）。lon,lat を停留所と同じ投影へ
     void load_basemap(const std::string& text) {
         basemap.clear();
@@ -76,8 +84,20 @@ struct Map {
     void resize(int w, int h) { W = w; H = h; base.resize(w, h); rgba.assign((size_t)w * h * 4, 255); ftime.assign((size_t)w * h, (float)INF); dirty = true; }
 
     void fit() {
+        if (data.stops.empty()) return;
+        // 中央値を中心に、遠い外れ停留所（25km 超）は除いて外接矩形を取る
+        std::vector<double> xs, ys; xs.reserve(data.stops.size()); ys.reserve(data.stops.size());
+        for (auto& s : data.stops) { xs.push_back(s.x); ys.push_back(s.y); }
+        std::vector<double> sx = xs, sy = ys;
+        std::nth_element(sx.begin(), sx.begin() + sx.size() / 2, sx.end());
+        std::nth_element(sy.begin(), sy.begin() + sy.size() / 2, sy.end());
+        double mx = sx[sx.size() / 2], my = sy[sy.size() / 2], R = 25000.0;
         double x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;
-        for (auto& s : data.stops) { x0 = std::min(x0, s.x); y0 = std::min(y0, s.y); x1 = std::max(x1, s.x); y1 = std::max(y1, s.y); }
+        for (auto& s : data.stops) {
+            if (std::abs(s.x - mx) > R || std::abs(s.y - my) > R) continue;
+            x0 = std::min(x0, s.x); y0 = std::min(y0, s.y); x1 = std::max(x1, s.x); y1 = std::max(y1, s.y);
+        }
+        if (x0 > x1) { x0 = mx - R; x1 = mx + R; y0 = my - R; y1 = my + R; }
         cx = (x0 + x1) / 2; cy = (y0 + y1) / 2;
         scale = std::min(W / std::max(1.0, x1 - x0), H / std::max(1.0, y1 - y0)) * 0.92;
         dirty = true;

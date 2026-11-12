@@ -11,6 +11,7 @@
 # 秒は真夜中から（24時以降は 86400 超）。標準ライブラリだけ。
 import csv, sys, os, math
 from collections import defaultdict
+from datetime import date, timedelta
 
 TRANSFER_MAX = 250.0     # m  徒歩乗り換えの上限
 WALK_SPEED = 1.1         # m/s
@@ -30,13 +31,41 @@ def main(gdir, out, region="地域"):
     nm = [s["stop_name"] for s in stops]
     n = len(stops)
 
-    # service_id -> cal（0=平日, 1=土日祝）。平日=月曜運行、土日祝=日曜運行で判定
-    cal_of = {}
+    # カレンダー（有効期間＋曜日）と例外（calendar_dates）
+    cal_rows = {}
     for c in rd(gdir, "calendar.txt"):
-        if c.get("monday") == "1":
-            cal_of[c["service_id"]] = 0
-        elif c.get("sunday") == "1" or c.get("saturday") == "1":
-            cal_of[c["service_id"]] = 1
+        dow = [c.get(d) == "1" for d in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")]
+        cal_rows[c["service_id"]] = (dow, c.get("start_date", "00000000"), c.get("end_date", "99999999"))
+    cdates = defaultdict(dict)   # 'YYYYMMDD' -> {service_id: exc}
+    cdp = os.path.join(gdir, "calendar_dates.txt")
+    if os.path.exists(cdp):
+        for r in rd(gdir, "calendar_dates.txt"):
+            cdates[r["date"]][r["service_id"]] = r.get("exception_type")
+
+    def services_on(d):
+        dt = date(int(d[:4]), int(d[4:6]), int(d[6:8])); wd = dt.weekday()
+        s = set()
+        for sid, (dow, st, en) in cal_rows.items():
+            if st <= d <= en and dow[wd]:
+                s.add(sid)
+        for sid, exc in cdates.get(d, {}).items():
+            if exc == "1": s.add(sid)
+            elif exc == "2": s.discard(sid)
+        return s
+
+    # 代表日: これから2週間で、サービスが最も多い平日(月〜金)と休日(土日)を選ぶ
+    base = date.today()
+    cand = [base + timedelta(i) for i in range(0, 14)]
+    fmt = lambda d: d.strftime("%Y%m%d")
+    wd_days = [d for d in cand if d.weekday() < 5]
+    hd_days = [d for d in cand if d.weekday() >= 5]
+    wd_date = max(wd_days, key=lambda d: len(services_on(fmt(d))))
+    hd_date = max(hd_days, key=lambda d: len(services_on(fmt(d))))
+    SW, SH = services_on(fmt(wd_date)), services_on(fmt(hd_date))
+    sys.stderr.write(f"weekday {fmt(wd_date)} services {len(SW)} / holiday {fmt(hd_date)} services {len(SH)}\n")
+    cal_of = {}
+    for sid in SW: cal_of[sid] = 0
+    for sid in SH: cal_of.setdefault(sid, 1)
     trip_srv = {t["trip_id"]: t["service_id"] for t in rd(gdir, "trips.txt")}
 
     # 便に通し番号（採用するサービスのみ）
