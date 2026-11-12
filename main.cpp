@@ -16,7 +16,7 @@ static std::string read_all(const std::string& p) { std::ifstream f(p, std::ios:
 int main(int argc, char** argv) {
     std::string data_p = argc > 1 ? argv[1] : "data/reach_toyama.txt";
     std::string base_p = argc > 2 ? argv[2] : "data/basemap.txt";
-    std::string font_p = argc > 3 ? argv[3] : "fonts/NotoSansJP-Bold-jis.ttf";
+    std::string font_p = argc > 3 ? argv[3] : "fonts/NotoSansJP-Bold-subset.ttf";
     std::string out = argc > 4 ? argv[4] : "out/reach";
     int W = argc > 5 ? atoi(argv[5]) : 1400, H = argc > 6 ? atoi(argv[6]) : 1000;
     std::string data = read_all(data_p), base = read_all(base_p), font = read_all(font_p);

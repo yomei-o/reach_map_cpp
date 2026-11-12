@@ -39,7 +39,7 @@ GTFS の時刻表を「ある停留所を何時に出て、次の停留所に何
 ```sh
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
-build/Release/reach_map.exe data/reach_toyama.txt data/basemap.txt fonts/NotoSansJP-Bold-jis.ttf out/reach 1400 1000
+build/Release/reach_map.exe data/reach_toyama.txt data/basemap.txt fonts/NotoSansJP-Bold-subset.ttf out/reach 1400 1000
 sh wasm/build.sh   # docs/rm.js, docs/rm.wasm
 ```
 
