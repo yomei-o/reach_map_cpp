@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
     rm::Map m;
     auto t0 = std::chrono::steady_clock::now();
     if (!m.load(data, base, (const unsigned char*)font.data(), font.size())) { fprintf(stderr, "load failed (%s)\n", data_p.c_str()); return 1; }
+    if (argc > 7) { std::string a = read_all(argv[7]); if (!a.empty()) printf("admin rings %d\n", m.load_admin(a)); }   // 都県の外周・区界（任意）
     auto t1 = std::chrono::steady_clock::now();
     printf("%s: stops %zu, conns %zu, trips %d (load %.0f ms)\n", m.data.region.c_str(), m.data.stops.size(), m.data.conns.size(), m.data.ntrips,
            std::chrono::duration<double, std::milli>(t1 - t0).count());

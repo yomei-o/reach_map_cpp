@@ -15,6 +15,8 @@ EMSCRIPTEN_KEEPALIVE int rm_init(const char* data, const char* basemap, const un
 }
 // 地域を切り替える（GTFS データだけ入れ替え）。戻り値は停留所数
 EMSCRIPTEN_KEEPALIVE int rm_load(const char* data) { return g.load_data(data); }
+// その地域の輪郭（都県の外周・区界）。空文字で消す。戻り値は輪の数
+EMSCRIPTEN_KEEPALIVE int rm_admin(const char* text) { return g.load_admin(text); }
 EMSCRIPTEN_KEEPALIVE void rm_resize(int w, int h, double ui) { g.ui = ui; g.resize(w, h); }
 EMSCRIPTEN_KEEPALIVE void rm_fit() { g.fit(); }
 EMSCRIPTEN_KEEPALIVE void rm_pan(double dx, double dy) { g.pan(dx, dy); }

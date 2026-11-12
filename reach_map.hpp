@@ -30,6 +30,7 @@ struct Map {
     std::vector<uint8_t> rgba;
     std::vector<float> ftime;     // 各ピクセルの総所要（秒, INF=空白）
     std::vector<std::vector<V2>> basemap;   // 県境・海岸線（世界座標 m）
+    std::vector<std::vector<V2>> admin_pref, admin_ward;   // 都県の外周・区界（地域ごと。世界座標 m）
 
     // 操作の状態
     int origin = 0;
@@ -54,8 +55,30 @@ struct Map {
     int load_data(const std::string& data_text) {
         if (!data.load(data_text)) return 0;
         origin = pick_busiest();
+        admin_pref.clear(); admin_ward.clear();   // 地域が変わるので輪郭は消す（必要なら load_admin で入れ直す）
         dirty = true;
         return (int)data.stops.size();
+    }
+
+    // その地域の詳しい輪郭（都県の外周・区界）を入れる。空文字で消す。lon,lat → 世界座標 m
+    int load_admin(const std::string& text) {
+        admin_pref.clear(); admin_ward.clear();
+        double kx = 111320.0 * std::cos(data.clat * 3.14159265358979323846 / 180.0), ky = 110574.0;
+        std::istringstream in(text); std::string ln; int which = -1;   // 0=pref 1=ward
+        while (std::getline(in, ln)) {
+            if (ln.empty() || ln[0] == '#') continue;
+            if (ln.rfind("pref", 0) == 0) { which = 0; continue; }
+            if (ln.rfind("ward", 0) == 0) { which = 1; continue; }
+            if (ln.rfind("ring ", 0) == 0 && which >= 0) {
+                std::vector<V2> r; std::istringstream s(ln.substr(5)); std::string tok;
+                while (s >> tok) { size_t c = tok.find(','); if (c == std::string::npos) continue;
+                    double lo = std::stod(tok.substr(0, c)), la = std::stod(tok.substr(c + 1));
+                    r.push_back({(float)(lo * kx), (float)(-la * ky)}); }
+                if (r.size() >= 2) (which == 0 ? admin_pref : admin_ward).push_back(std::move(r));
+            }
+        }
+        dirty = true;
+        return (int)(admin_pref.size() + admin_ward.size());
     }
 
     // 下地（Natural Earth の県境・陸地）。lon,lat を停留所と同じ投影へ
@@ -190,6 +213,14 @@ struct Map {
             std::vector<V2> s; s.reserve(r.size());
             for (auto& p : r) s.push_back(to_screen(p.x, p.y));
             polyline(base, s, std::max(1.f, (float)ui), {0.5f, 0.6f, 0.75f}, 0.18f);
+        }
+        // 都県の外周・区界（あれば。塗りの上に薄く、場所の手がかりに）
+        if (!admin_ward.empty() || !admin_pref.empty()) {
+            auto draw_rings = [&](const std::vector<std::vector<V2>>& rs, float w, Rgb col, float al) {
+                for (auto& r : rs) { std::vector<V2> s; s.reserve(r.size()); for (auto& p : r) s.push_back(to_screen(p.x, p.y)); polyline(base, s, w, col, al); }
+            };
+            draw_rings(admin_ward, std::max(1.f, (float)ui), {0.8f, 0.85f, 0.95f}, 0.28f);
+            draw_rings(admin_pref, std::max(1.f, 1.4f * (float)ui), {0.9f, 0.93f, 1.f}, 0.5f);
         }
         // 停留所の点
         int limit = dep + horizon;

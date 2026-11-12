@@ -11,6 +11,7 @@ EMCC="$EMSDK/upstream/emscripten/emcc.exe"
   wasm/rm_wasm.cpp -o docs/rm.js
 cp data/reach_toyama.txt docs/reach_toyama.txt
 cp data/reach_toei.txt docs/reach_toei.txt
+cp data/admin_tokyo.txt docs/admin_tokyo.txt
 cp data/basemap.txt docs/basemap.txt
 cp fonts/NotoSansJP-Bold-subset.ttf docs/font.ttf
 echo "built docs/rm.js"

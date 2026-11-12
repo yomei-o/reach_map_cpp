@@ -85,12 +85,16 @@ function draw(){
   window.addEventListener('resize', ()=>{ size(); draw(); });
 
   // 地域切り替え（GTFS データだけ入れ替え。東京は大きいので少し待つ）
+  const ADMIN = { 'reach_toei.txt': 'admin_tokyo.txt' };   // 地域ごとの詳しい輪郭（あれば）
   $('region').addEventListener('change', async e => {
-    const prev = $('reached').textContent; $('reached').textContent = '読み込み中…';
+    $('reached').textContent = '読み込み中…';
     try {
       const t = await fetch(e.target.value).then(r=>r.text());
       const p = pass(t); const ns = M._rm_load(p); M._free(p);
       if (!ns){ $('reached').textContent = '読み込み失敗'; return; }
+      const af = ADMIN[e.target.value];
+      if (af){ const a = await fetch(af).then(r=>r.text()); const ap = pass(a); M._rm_admin(ap); M._free(ap); }
+      else { const ep = pass(''); M._rm_admin(ep); M._free(ep); }
       M._rm_fit(); draw();
     } catch(err){ $('reached').textContent = '読み込み失敗: '+err; }
   });
